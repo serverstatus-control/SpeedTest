@@ -51,31 +51,41 @@ const SpeedTest = () => {
     }
   };
 
+  const calculateSpeed = (bytes: number, durationInSeconds: number): number => {
+    const bitsPerSecond = (bytes * 8) / durationInSeconds;
+    const megabitsPerSecond = bitsPerSecond / (1024 * 1024);
+    return Math.round(megabitsPerSecond * 100) / 100;
+  };
   const testDownload = async () => {
     try {
+      setDownloadSpeed(0); // Reset della velocità
       const testUrls = [
-        'https://speed.cloudflare.com/__down', // endpoint Cloudflare che supporta CORS
-        'https://speed.hetzner.de/1MB.bin',
-        'https://proof.ovh.net/files/10Mio.dat'
+        'https://speed.cloudflare.com/__down',
+        'https://httpbin.org/stream-bytes/50000000',
+        'https://httpbin.org/bytes/50000000'
       ];
       let success = false;
       for (const testUrl of testUrls) {
         try {
-          const startTime = performance.now();
-          const response = await fetch(testUrl, { cache: 'no-store' });
+          const startTime = performance.now();          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // timeout dopo 10 secondi
+          
+          const response = await fetch(testUrl, { 
+            cache: 'no-store',
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
           if (!response.ok) continue;
           const reader = response.body?.getReader();
-          if (!reader) continue;
-          let lastTime = startTime;
+          if (!reader) continue;          let lastTime = startTime;
           let speeds: number[] = [];
-          // chunkCount rimosso perché non usato
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            const now = performance.now();
-            const duration = (now - lastTime) / 1000;
+            const now = performance.now();            const duration = (now - lastTime) / 1000;
             if (duration > 0.2 && value.length > 0) {
-              const speedMbps = (value.length * 8) / (duration * 1024 * 1024);
+              const speedMbps = calculateSpeed(value.length, duration);
               if (speedMbps > 0) speeds.push(speedMbps);
               const recentSpeeds = speeds.slice(-5);
               setDownloadSpeed(Math.round(recentSpeeds.reduce((a, b) => a + b, 0) / recentSpeeds.length));
@@ -95,25 +105,24 @@ const SpeedTest = () => {
         } catch {
           continue;
         }
+      }      if (!success) {
+        console.error('Nessun server di test disponibile per il download');
+        setDownloadSpeed(0);
       }
-      if (!success) {
-        setDownloadSpeed(-1); // -1 indica errore
-      }
-    } catch {
-      setDownloadSpeed(-1);
+    } catch (error) {
+      console.error('Errore durante il test di download:', error);
+      setDownloadSpeed(0);
     }
   };
-
   const testUpload = async () => {
     try {
+      setUploadSpeed(0); // Reset della velocità
       const testUrls = [
         'https://httpbin.org/post',
-        'https://postman-echo.com/post',
-        'https://proof.ovh.net/upload.php'
+        'https://postman-echo.com/post'
       ];
-      let success = false;
-      const chunkSize = 512 * 1024;
-      const chunks = 4;
+      let success = false;      const chunkSize = 1024 * 1024; // 1MB
+      const chunks = 8;
       let speeds: number[] = [];
       for (const testUrl of testUrls) {
         try {
@@ -121,17 +130,23 @@ const SpeedTest = () => {
             const chunk = new Uint8Array(chunkSize);
             crypto.getRandomValues(chunk);
             const blob = new Blob([chunk]);
-            const startTime = performance.now();
+            const startTime = performance.now();            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
             const response = await fetch(testUrl, {
               method: 'POST',
               body: blob,
-              headers: { 'Content-Type': 'application/octet-stream' }
+              signal: controller.signal,
+              headers: { 
+                'Content-Type': 'application/octet-stream'
+              }
             });
-            if (!response.ok) continue;
-            const endTime = performance.now();
+            
+            clearTimeout(timeoutId);
+            if (!response.ok) continue;            const endTime = performance.now();
             const duration = (endTime - startTime) / 1000;
             if (duration > 0) {
-              const speedMbps = (blob.size * 8) / (duration * 1024 * 1024);
+              const speedMbps = calculateSpeed(blob.size, duration);
               if (speedMbps > 0) speeds.push(speedMbps);
               setUploadSpeed(Math.round(speeds.reduce((a, b) => a + b, 0) / speeds.length));
             }
@@ -148,12 +163,13 @@ const SpeedTest = () => {
         } catch {
           continue;
         }
+      }      if (!success) {
+        console.error('Nessun server di test disponibile per l\'upload');
+        setUploadSpeed(0);
       }
-      if (!success) {
-        setUploadSpeed(-1);
-      }
-    } catch {
-      setUploadSpeed(-1);
+    } catch (error) {
+      console.error('Errore durante il test di upload:', error);
+      setUploadSpeed(0);
     }
   };
 
@@ -161,18 +177,16 @@ const SpeedTest = () => {
     <div className="speed-test-container">
       <div className="speed-indicators">
         <SpeedIndicator
-          icon={faDownload}
-          value={downloadSpeed === -1 ? 0 : downloadSpeed}
+          icon={faDownload}          value={downloadSpeed}
           unit="Mbps"
-          label={downloadSpeed === -1 ? "Errore" : "Download"}
+          label="Download"
           isTesting={isTesting}
           maxValue={100}
         />
         <SpeedIndicator
-          icon={faUpload}
-          value={uploadSpeed === -1 ? 0 : uploadSpeed}
+          icon={faUpload}          value={uploadSpeed}
           unit="Mbps"
-          label={uploadSpeed === -1 ? "Errore" : "Upload"}
+          label="Upload"
           isTesting={isTesting}
           maxValue={100}
         />
