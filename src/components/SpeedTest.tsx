@@ -30,58 +30,130 @@ const SpeedTest = () => {
 
   const testPing = async () => {
     try {
-      const startTime = performance.now();
-      await fetch('https://www.google.com/generate_204');
-      const endTime = performance.now();
-      const pingTime = Math.round(endTime - startTime);
-      setPing(pingTime);
+      const numberOfTests = 5;
+      let totalPing = 0;
+      for (let i = 0; i < numberOfTests; i++) {
+        const startTime = performance.now();
+        // Usa un endpoint che risponde velocemente e supporta CORS
+        await fetch('https://cors-test.appspot.com/test', { cache: 'no-store' });
+        const endTime = performance.now();
+        const pingTime = endTime - startTime;
+        totalPing += pingTime;
+        if (i < numberOfTests - 1) {
+          await new Promise(resolve => setTimeout(resolve, 150));
+        }
+      }
+      const averagePing = Math.round(totalPing / numberOfTests);
+      setPing(Math.max(1, averagePing));
     } catch (error) {
       console.error('Error testing ping:', error);
-      setPing(0);
+      setPing(1);
     }
   };
 
   const testDownload = async () => {
     try {
-      const fileSize = 5 * 1024 * 1024; // 5MB
-      const testFile = `https://cors-anywhere.herokuapp.com/http://speedtest.ftp.otenet.gr/files/test${fileSize}.db`;
-      
-      const startTime = performance.now();
-      const response = await fetch(testFile);
-      await response.blob();
-      const endTime = performance.now();
-      
-      const durationInSeconds = (endTime - startTime) / 1000;
-      const bitsLoaded = fileSize * 8;
-      const speedBps = (bitsLoaded / durationInSeconds);
-      const speedMbps = Math.round(speedBps / (1024 * 1024));
-      
-      setDownloadSpeed(speedMbps);
-    } catch (error) {
-      console.error('Error testing download:', error);
-      setDownloadSpeed(0);
+      const testUrls = [
+        'https://speed.cloudflare.com/__down', // endpoint Cloudflare che supporta CORS
+        'https://speed.hetzner.de/1MB.bin',
+        'https://proof.ovh.net/files/10Mio.dat'
+      ];
+      let success = false;
+      for (const testUrl of testUrls) {
+        try {
+          const startTime = performance.now();
+          const response = await fetch(testUrl, { cache: 'no-store' });
+          if (!response.ok) continue;
+          const reader = response.body?.getReader();
+          if (!reader) continue;
+          let lastTime = startTime;
+          let speeds: number[] = [];
+          // chunkCount rimosso perché non usato
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const now = performance.now();
+            const duration = (now - lastTime) / 1000;
+            if (duration > 0.2 && value.length > 0) {
+              const speedMbps = (value.length * 8) / (duration * 1024 * 1024);
+              if (speedMbps > 0) speeds.push(speedMbps);
+              const recentSpeeds = speeds.slice(-5);
+              setDownloadSpeed(Math.round(recentSpeeds.reduce((a, b) => a + b, 0) / recentSpeeds.length));
+              lastTime = now;
+            }
+          }
+          if (speeds.length > 0) {
+            if (speeds.length >= 5) {
+              speeds.sort((a, b) => a - b);
+              speeds = speeds.slice(1, -1);
+            }
+            const avgSpeed = Math.round(speeds.reduce((a, b) => a + b, 0) / speeds.length);
+            setDownloadSpeed(avgSpeed);
+            success = true;
+            break;
+          }
+        } catch {
+          continue;
+        }
+      }
+      if (!success) {
+        setDownloadSpeed(-1); // -1 indica errore
+      }
+    } catch {
+      setDownloadSpeed(-1);
     }
   };
 
   const testUpload = async () => {
     try {
-      const blob = new Blob([new ArrayBuffer(1 * 1024 * 1024)]); // 1MB
-      const startTime = performance.now();
-      await fetch('https://cors-anywhere.herokuapp.com/http://speedtest.ftp.otenet.gr/upload.php', {
-        method: 'POST',
-        body: blob
-      });
-      const endTime = performance.now();
-      
-      const durationInSeconds = (endTime - startTime) / 1000;
-      const bitsLoaded = blob.size * 8;
-      const speedBps = (bitsLoaded / durationInSeconds);
-      const speedMbps = Math.round(speedBps / (1024 * 1024));
-      
-      setUploadSpeed(speedMbps);
-    } catch (error) {
-      console.error('Error testing upload:', error);
-      setUploadSpeed(0);
+      const testUrls = [
+        'https://httpbin.org/post',
+        'https://postman-echo.com/post',
+        'https://proof.ovh.net/upload.php'
+      ];
+      let success = false;
+      const chunkSize = 512 * 1024;
+      const chunks = 4;
+      let speeds: number[] = [];
+      for (const testUrl of testUrls) {
+        try {
+          for (let i = 0; i < chunks; i++) {
+            const chunk = new Uint8Array(chunkSize);
+            crypto.getRandomValues(chunk);
+            const blob = new Blob([chunk]);
+            const startTime = performance.now();
+            const response = await fetch(testUrl, {
+              method: 'POST',
+              body: blob,
+              headers: { 'Content-Type': 'application/octet-stream' }
+            });
+            if (!response.ok) continue;
+            const endTime = performance.now();
+            const duration = (endTime - startTime) / 1000;
+            if (duration > 0) {
+              const speedMbps = (blob.size * 8) / (duration * 1024 * 1024);
+              if (speedMbps > 0) speeds.push(speedMbps);
+              setUploadSpeed(Math.round(speeds.reduce((a, b) => a + b, 0) / speeds.length));
+            }
+          }
+          if (speeds.length > 0) {
+            if (speeds.length >= 4) {
+              speeds.sort((a, b) => a - b);
+              speeds = speeds.slice(1, -1);
+            }
+            setUploadSpeed(Math.round(speeds.reduce((a, b) => a + b, 0) / speeds.length));
+            success = true;
+            break;
+          }
+        } catch {
+          continue;
+        }
+      }
+      if (!success) {
+        setUploadSpeed(-1);
+      }
+    } catch {
+      setUploadSpeed(-1);
     }
   };
 
@@ -90,17 +162,17 @@ const SpeedTest = () => {
       <div className="speed-indicators">
         <SpeedIndicator
           icon={faDownload}
-          value={downloadSpeed}
+          value={downloadSpeed === -1 ? 0 : downloadSpeed}
           unit="Mbps"
-          label="Download"
+          label={downloadSpeed === -1 ? "Errore" : "Download"}
           isTesting={isTesting}
           maxValue={100}
         />
         <SpeedIndicator
           icon={faUpload}
-          value={uploadSpeed}
+          value={uploadSpeed === -1 ? 0 : uploadSpeed}
           unit="Mbps"
-          label="Upload"
+          label={uploadSpeed === -1 ? "Errore" : "Upload"}
           isTesting={isTesting}
           maxValue={100}
         />

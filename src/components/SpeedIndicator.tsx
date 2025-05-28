@@ -13,15 +13,17 @@ interface SpeedIndicatorProps {
 
 const SpeedIndicator = ({ icon, value, unit, label, isTesting, maxValue = 100 }: SpeedIndicatorProps) => {
   const circleRef = useRef<SVGCircleElement>(null);
+  const radius = 100; // Raggio del cerchio
+  const circumference = 2 * Math.PI * radius;
 
   useEffect(() => {
     if (circleRef.current) {
-      const circumference = 339.292;
       const progress = Math.min(value / maxValue, 1);
       const offset = circumference - (progress * circumference);
-      circleRef.current.style.strokeDashoffset = offset.toString();
+      circleRef.current.style.strokeDasharray = `${circumference}`;
+      circleRef.current.style.strokeDashoffset = `${offset}`;
     }
-  }, [value, maxValue]);
+  }, [value, maxValue, circumference]);
 
   return (
     <div className={`indicator ${isTesting ? 'testing' : ''}`}>
@@ -32,14 +34,15 @@ const SpeedIndicator = ({ icon, value, unit, label, isTesting, maxValue = 100 }:
       <div className="unit">{unit}</div>
       <div className="label">{label}</div>
       <div className="progress-ring">
-        <svg>
+        <svg viewBox="0 0 210 210">
           <circle
             ref={circleRef}
             className="progress-ring-circle"
-            cx="60"
-            cy="60"
-            r="54"
-            strokeWidth="6"
+            cx="105"
+            cy="105"
+            r={radius}
+            fill="none"
+            strokeWidth="3"
           />
         </svg>
       </div>
