@@ -1,0 +1,175 @@
+.speed-test-container {
+  background-color: var(--card-background);
+  border-radius: 20px;
+  padding: clamp(1rem, 5vw, 2rem);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+  width: min(95%, 1200px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.speed-indicators {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: clamp(1rem, 3vw, 2rem);
+  margin-bottom: clamp(1rem, 3vw, 2rem);
+  width: 100%;
+}
+
+.indicator {
+  position: relative;
+  width: clamp(160px, 30vw, 200px);
+  height: clamp(160px, 30vw, 200px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(0.5rem, 2vw, 1rem);
+  border-radius: 15px;
+  background: linear-gradient(145deg, #323232, #2a2a2a);
+  box-shadow: 5px 5px 15px #242424, -5px -5px 15px #363636;
+  transition: transform 0.3s ease;
+}
+
+.indicator:hover {
+  transform: translateY(-5px);
+}
+
+.icon {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+}
+
+.value {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: bold;
+  margin: 0.5rem 0;
+}
+
+.unit {
+  font-size: clamp(0.8rem, 2vw, 0.9rem);
+  color: #888;
+}
+
+.label {
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  color: #aaa;
+  margin-top: 0.5rem;
+}
+
+.progress-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.progress-ring svg {
+  width: 120px;
+  height: 120px;
+  transform: rotate(-90deg);
+}
+
+.progress-ring-circle {
+  fill: none;
+  stroke: var(--primary-color);
+  stroke-dasharray: 339.292;
+  stroke-dashoffset: 339.292;
+  transition: stroke-dashoffset 1s ease;
+}
+
+.testing .progress-ring-circle {
+  animation: progress 2s ease-in-out infinite;
+}
+
+.start-button {
+  position: relative;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: clamp(0.8rem, 2vw, 1rem) clamp(2rem, 5vw, 3rem);
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  border-radius: 50px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+.start-button:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+  background-color: #1976d2;
+}
+
+.start-button:disabled {
+  background-color: #666;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.button-effect {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: scale(0);
+  animation: ripple 0.6s linear;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes progress {
+  0% {
+    stroke-dashoffset: 339.292;
+  }
+  50% {
+    stroke-dashoffset: 100;
+  }
+  100% {
+    stroke-dashoffset: 339.292;
+  }
+}
+
+@media (max-width: 768px) {
+  .speed-indicators {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .indicator {
+    width: 180px;
+    height: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .speed-test-container {
+    padding: 1rem;
+  }
+
+  .indicator {
+    width: 140px;
+    height: 140px;
+  }
+
+  .progress-ring svg {
+    width: 100px;
+    height: 100px;
+  }
+
+  .start-button {
+    width: 100%;
+    max-width: 280px;
+  }
+}

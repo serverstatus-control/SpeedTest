@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800px" height="800px" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        .wifi-wave {
+            animation: wifiWave 2s infinite;
+            transform-origin: center;
+            opacity: 0;
+        }
+        
+        .wifi-wave-1 { animation-delay: 0s; }
+        .wifi-wave-2 { animation-delay: 0.4s; }
+        .wifi-wave-3 { animation-delay: 0.8s; }
+        
+        @keyframes wifiWave {
+            0% { opacity: 0; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.2); }
+        }
+    </style>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <!-- Outer Wave -->
+        <path class="wifi-wave wifi-wave-1" d="M12,3 C16.971,3 21.456,4.984 24,8 L12,20 L0,8 C2.544,4.984 7.029,3 12,3" fill="#2196F3" opacity="0.3"/>
+        
+        <!-- Middle Wave -->
+        <path class="wifi-wave wifi-wave-2" d="M12,7 C15.179,7 18.137,8.15 20.359,10.227 L12,18.586 L3.641,10.227 C5.863,8.15 8.821,7 12,7" fill="#2196F3" opacity="0.6"/>
+        
+        <!-- Inner Wave -->
+        <path class="wifi-wave wifi-wave-3" d="M12,11 C13.657,11 15.157,11.686 16.243,12.757 L12,17 L7.757,12.757 C8.843,11.686 10.343,11 12,11" fill="#2196F3" opacity="0.9"/>
+        
+        <!-- Center Dot -->
+        <circle cx="12" cy="18" r="2" fill="#2196F3"/>
+    </g>
+</svg>
